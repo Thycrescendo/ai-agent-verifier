@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@types/chart.js": "^4.0.1",
+    "@types/chart.js": "^2.9.34",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

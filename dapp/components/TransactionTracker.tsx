@@ -1,19 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 
-const TransactionTracker: React.FC<{ account?: string }> = ({ account }) => {
+const TransactionTracker: React.FC<{ account: string | null }> = ({ account }) => {
   const [txStatus, setTxStatus] = useState<string>('No transactions');
 
   useEffect(() => {
-    if (!account) return;
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const watchTx = async () => {
-      provider.on('block', (blockNumber) => {
-        setTxStatus(`Last Block: ${blockNumber} | Checking for ${account.slice(0, 6)}...`);
-      });
+    let isMounted = true; // Flag to prevent state updates on unmounted component
+
+    const setupTracker = async () => {
+      if (!account || !window.ethereum) {
+        if (isMounted) setTxStatus('No account or MetaMask detected');
+        return;
+      }
+
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        provider.on('block', (blockNumber) => {
+          if (isMounted) {
+            setTxStatus(`Last Block: ${blockNumber} | Checking for ${account.slice(0, 6)}...`);
+          }
+        });
+
+        // Initial block number fetch
+        const blockNumber = await provider.getBlockNumber();
+        if (isMounted) {
+          setTxStatus(`Last Block: ${blockNumber} | Checking for ${account.slice(0, 6)}...`);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setTxStatus('Error tracking transactions. Check MetaMask connection.');
+        }
+      }
     };
-    watchTx();
-    return () => provider.off('block');
+
+    setupTracker();
+
+    // Cleanup function to remove event listener
+    return () => {
+      isMounted = false;
+      if (window.ethereum) {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        provider.off('block');
+      }
+    };
   }, [account]);
 
   return (
